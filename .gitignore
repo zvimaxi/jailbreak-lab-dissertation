@@ -1,0 +1,40 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+dist/
+build/
+
+# --- Virtual environments ---
+venv/
+.venv/
+env/
+ENV/
+
+# --- Jupyter / caches ---
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+.cache/
+
+# --- Secrets ---
+.env
+*.env
+
+# --- OS / IDE ---
+.DS_Store
+.idea/
+.vscode/
+
+# --- Data / experiment outputs (often huge) ---
+data/runs/
+data/**/runs/
+*.jsonl
+*.sqlite
+*.db
+
+# --- Logs (optional: keep if you want them in repo) ---
+*.log
