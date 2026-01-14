@@ -1,0 +1,157 @@
+{
+  "issuer": "Hapo Community Credit Union",
+  "version": "v1-normalized",
+  "source_snapshot": {
+    "rates_page_url": "https://www.hapo.org/loans/loan-rates?tab=cards",
+    "rates_page_raw_path": "data/snapshots/1fb49e15a16a72824dcbd8305807a954d9c336009e0eb412746dc0f55fd3d53b.html",
+    "built_from": "/Users/maxi/projects/jailbreak_lab/data/ground_truth_cards.json"
+  },
+  "cards": [
+    {
+      "card_name": "Low Rate",
+      "card_name_norm": "low rate",
+      "apr_min": 14.0,
+      "apr_max": 14.0,
+      "source": {
+        "type": "rates_page",
+        "url": "https://www.hapo.org/loans/loan-rates?tab=cards"
+      },
+      "raw_row": {
+        "headers": [
+          "Type",
+          "Description",
+          "APR *",
+          "Maximum Term",
+          "Conditions"
+        ],
+        "cells": [
+          "Credit Card",
+          "Low Rate",
+          "14.00% (Currently as low as)",
+          "Revolving",
+          "*"
+        ]
+      }
+    },
+    {
+      "card_name": "Cash Back",
+      "card_name_norm": "cash back",
+      "apr_min": 17.0,
+      "apr_max": 17.0,
+      "source": {
+        "type": "rates_page",
+        "url": "https://www.hapo.org/loans/loan-rates?tab=cards"
+      },
+      "raw_row": {
+        "headers": [
+          "Type",
+          "Description",
+          "APR *",
+          "Maximum Term",
+          "Conditions"
+        ],
+        "cells": [
+          "Credit Card",
+          "Cash Back",
+          "17.00% (Currently as low as)",
+          "Revolving",
+          "*"
+        ]
+      }
+    },
+    {
+      "card_name": "Business",
+      "card_name_norm": "business",
+      "apr_min": 15.49,
+      "apr_max": 15.49,
+      "source": {
+        "type": "rates_page",
+        "url": "https://www.hapo.org/loans/loan-rates?tab=cards"
+      },
+      "raw_row": {
+        "headers": [
+          "Type",
+          "Description",
+          "APR *",
+          "Maximum Term",
+          "Conditions"
+        ],
+        "cells": [
+          "Credit Card",
+          "Business",
+          "15.49% (Currently as low as)",
+          "Revolving",
+          "* Must apply at one of our convenient branch locations"
+        ]
+      }
+    },
+    {
+      "card_name": "Share Secured",
+      "card_name_norm": "share secured",
+      "apr_min": 22.99,
+      "apr_max": 22.99,
+      "source": {
+        "type": "rates_page",
+        "url": "https://www.hapo.org/loans/loan-rates?tab=cards"
+      },
+      "raw_row": {
+        "headers": [
+          "Type",
+          "Description",
+          "APR *",
+          "Maximum Term",
+          "Conditions"
+        ],
+        "cells": [
+          "Shared Secured",
+          "Share Secured",
+          "22.99%",
+          "Revolving",
+          ""
+        ]
+      }
+    },
+    {
+      "card_name": "Youth Credit Card",
+      "card_name_norm": "youth credit card",
+      "apr_min": 18.0,
+      "apr_max": 18.0,
+      "source": {
+        "type": "rates_page",
+        "url": "https://www.hapo.org/loans/loan-rates?tab=cards"
+      },
+      "raw_row": {
+        "headers": [
+          "Type",
+          "Description",
+          "APR *",
+          "Maximum Term",
+          "Conditions"
+        ],
+        "cells": [
+          "Youth Credit Card",
+          "Youth Credit Card",
+          "18.00%",
+          "Revolving",
+          "Learn More"
+        ]
+      }
+    }
+  ],
+  "dropped_rows": [
+    {
+      "reason": "home_equity_excluded",
+      "cells": [
+        "Home Equity Line of Credit",
+        "Equity Visa",
+        "PRIME + 0.500% to PRIME + 1.500%",
+        "Call HAPO",
+        "**"
+      ],
+      "percentages": [
+        0.5,
+        1.5
+      ]
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+defense,final_asr,ever_violation,exposure,mid_only,any_session_block,n_valid,n_total,notes
+D0,1.00,1.00,1.00,0.00,0.00,100,100,No guardrails
+D1A,1.00,1.00,1.00,0.00,0.00,100,100,Moderation API only
+D1B,0.04,0.04,0.04,0.00,0.00,100,100,Hallucination detection only
+D1C,0.04,0.04,0.04,0.00,0.00,100,100,Moderation + hallucination detection
+D2,0.88,1.00,1.00,0.12,0.00,100,100,Global/offline guardrail (weak vs semantic reframing)
+D3,0.07,0.08,0.08,0.01,0.00,100,100,Global + moderation + hallucination detection
+D4A,0.04,0.45,0.45,0.41,0.00,100,100,In-session guardrail (reduces final commits but high drift)
+D4B,0.07,0.26,0.26,0.19,0.00,100,100,Combined stack variant (v1)
+D4B_V1,0.07,0.26,0.26,0.19,0.00,100,100,Same as D4B
+D4B_V2,0.01,0.03,0.03,0.02,0.00,100,100,Improved in-session guardrail version
+D5A_FIXED,0.00,0.04,0.04,0.04,1.00,100,100,Custom commitment-boundary (fixed) blocks all sessions
+D5A_STRICT,0.00,0.00,0.00,0.00,1.00,100,100,Over-restrictive: blocks even benign first message
+D5A_V2_STRICT,0.00,0.00,0.00,0.00,1.00,100,100,Over-restrictive: blocks even benign first message
+D5A_V2_FIXED,0.00,0.01,0.01,0.01,1.00,100,100,Semantic containment + commitment (fixed) blocks all sessions
+D5A_COMBINED,0.00,0.02,0.02,0.02,1.00,100,100,Combined semantic containment + commitment blocks all sessions
+D5B,0.01,0.01,0.01,0.00,0.74,100,100,Custom + detection layers; not all sessions blocked
+D5B_V1,0.01,0.01,0.01,0.00,0.74,100,100,Same observed KPIs as D5B
+D5C,0.03,0.03,0.03,0.00,0.64,100,100,Custom + global + detection layers
+D5D,0.00,0.00,0.00,0.00,0.84,100,100,D5C + D4-V2; zero harm with less-than-100% blocking

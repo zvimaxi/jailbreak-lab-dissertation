@@ -1,0 +1,239 @@
+{
+  "issuer": "Hapo Community Credit Union",
+  "sources": [
+    {
+      "url": "https://www.hapo.org/loans/loan-rates?tab=cards",
+      "fetched_at_utc": "2026-01-06T22:16:19.088094+00:00",
+      "status_code": 200,
+      "content_type": "text/html",
+      "sha256": "d22dea194544fa166867a6104458dfc98720c3e3c3cba3c465b45df626209b73",
+      "raw_path": "data/snapshots/d22dea194544fa166867a6104458dfc98720c3e3c3cba3c465b45df626209b73.html"
+    },
+    {
+      "url": "https://www.hapo.org/personal/visa/instant-issue-platinum-visa",
+      "fetched_at_utc": "2026-01-06T22:16:20.204644+00:00",
+      "status_code": 200,
+      "content_type": "text/html",
+      "sha256": "0a1f41cd5e41f538985db2f90fb9da84ae674a2fa8bdf5c65690c76774a5c2f1",
+      "raw_path": "data/snapshots/0a1f41cd5e41f538985db2f90fb9da84ae674a2fa8bdf5c65690c76774a5c2f1.html"
+    },
+    {
+      "url": "https://www.hapo.org/personal/visa/low-rate-visa",
+      "fetched_at_utc": "2026-01-06T22:16:21.229739+00:00",
+      "status_code": 200,
+      "content_type": "text/html",
+      "sha256": "23bc7024748725fa606c6e6882bcde2a738d01fc31fd2f2b1fae27103a4c4885",
+      "raw_path": "data/snapshots/23bc7024748725fa606c6e6882bcde2a738d01fc31fd2f2b1fae27103a4c4885.html"
+    },
+    {
+      "url": "https://www.hapo.org/personal/visa/home-equity-visa",
+      "fetched_at_utc": "2026-01-06T22:16:22.209507+00:00",
+      "status_code": 200,
+      "content_type": "text/html",
+      "sha256": "e5350367a8e7f1e6bbac4e5f0c43076fca051952ccc85e3a6ef9a89d8c8c4a86",
+      "raw_path": "data/snapshots/e5350367a8e7f1e6bbac4e5f0c43076fca051952ccc85e3a6ef9a89d8c8c4a86.html"
+    },
+    {
+      "url": "https://www.hapo.org/personal/visa/youth-visa-credit-card",
+      "fetched_at_utc": "2026-01-06T22:16:23.178787+00:00",
+      "status_code": 200,
+      "content_type": "text/html",
+      "sha256": "b8d1130794be875a49a1e1206a9048cd2407195f7ec5a50e8905bb8969ecd755",
+      "raw_path": "data/snapshots/b8d1130794be875a49a1e1206a9048cd2407195f7ec5a50e8905bb8969ecd755.html"
+    },
+    {
+      "url": "https://www.hapo.org/personal/visa/share-secured-visa",
+      "fetched_at_utc": "2026-01-06T22:16:24.148882+00:00",
+      "status_code": 200,
+      "content_type": "text/html",
+      "sha256": "963c1d124676d982e449a572417369d5dcd3a30caa562099ab0c9e6c5a34322e",
+      "raw_path": "data/snapshots/963c1d124676d982e449a572417369d5dcd3a30caa562099ab0c9e6c5a34322e.html"
+    }
+  ],
+  "cards": [
+    {
+      "card_name": "Cash Back Visa",
+      "url": "https://www.hapo.org/personal/visa/instant-issue-platinum-visa",
+      "snapshot": {
+        "url": "https://www.hapo.org/personal/visa/instant-issue-platinum-visa",
+        "fetched_at_utc": "2026-01-06T22:16:20.204644+00:00",
+        "status_code": 200,
+        "content_type": "text/html",
+        "sha256": "0a1f41cd5e41f538985db2f90fb9da84ae674a2fa8bdf5c65690c76774a5c2f1",
+        "raw_path": "data/snapshots/0a1f41cd5e41f538985db2f90fb9da84ae674a2fa8bdf5c65690c76774a5c2f1.html"
+      },
+      "page_title": "Cash Back Visa",
+      "percentages_found_on_page": [],
+      "intro_months_hint": 6
+    },
+    {
+      "card_name": "Low Rate Visa",
+      "url": "https://www.hapo.org/personal/visa/low-rate-visa",
+      "snapshot": {
+        "url": "https://www.hapo.org/personal/visa/low-rate-visa",
+        "fetched_at_utc": "2026-01-06T22:16:21.229739+00:00",
+        "status_code": 200,
+        "content_type": "text/html",
+        "sha256": "23bc7024748725fa606c6e6882bcde2a738d01fc31fd2f2b1fae27103a4c4885",
+        "raw_path": "data/snapshots/23bc7024748725fa606c6e6882bcde2a738d01fc31fd2f2b1fae27103a4c4885.html"
+      },
+      "page_title": "Low Rate Visa",
+      "percentages_found_on_page": [
+        7.0
+      ],
+      "intro_months_hint": 6
+    },
+    {
+      "card_name": "Home Equity Visa",
+      "url": "https://www.hapo.org/personal/visa/home-equity-visa",
+      "snapshot": {
+        "url": "https://www.hapo.org/personal/visa/home-equity-visa",
+        "fetched_at_utc": "2026-01-06T22:16:22.209507+00:00",
+        "status_code": 200,
+        "content_type": "text/html",
+        "sha256": "e5350367a8e7f1e6bbac4e5f0c43076fca051952ccc85e3a6ef9a89d8c8c4a86",
+        "raw_path": "data/snapshots/e5350367a8e7f1e6bbac4e5f0c43076fca051952ccc85e3a6ef9a89d8c8c4a86.html"
+      },
+      "page_title": "Home Equity Visa",
+      "percentages_found_on_page": [
+        18.0
+      ],
+      "intro_months_hint": null
+    },
+    {
+      "card_name": "Youth Visa Credit Card",
+      "url": "https://www.hapo.org/personal/visa/youth-visa-credit-card",
+      "snapshot": {
+        "url": "https://www.hapo.org/personal/visa/youth-visa-credit-card",
+        "fetched_at_utc": "2026-01-06T22:16:23.178787+00:00",
+        "status_code": 200,
+        "content_type": "text/html",
+        "sha256": "b8d1130794be875a49a1e1206a9048cd2407195f7ec5a50e8905bb8969ecd755",
+        "raw_path": "data/snapshots/b8d1130794be875a49a1e1206a9048cd2407195f7ec5a50e8905bb8969ecd755.html"
+      },
+      "page_title": "Youth Visa Credit Card",
+      "percentages_found_on_page": [
+        18.0
+      ],
+      "intro_months_hint": null
+    },
+    {
+      "card_name": "Share Secured Visa",
+      "url": "https://www.hapo.org/personal/visa/share-secured-visa",
+      "snapshot": {
+        "url": "https://www.hapo.org/personal/visa/share-secured-visa",
+        "fetched_at_utc": "2026-01-06T22:16:24.148882+00:00",
+        "status_code": 200,
+        "content_type": "text/html",
+        "sha256": "963c1d124676d982e449a572417369d5dcd3a30caa562099ab0c9e6c5a34322e",
+        "raw_path": "data/snapshots/963c1d124676d982e449a572417369d5dcd3a30caa562099ab0c9e6c5a34322e.html"
+      },
+      "page_title": "Share Secured Visa",
+      "percentages_found_on_page": [],
+      "intro_months_hint": 6
+    }
+  ],
+  "rates_page": {
+    "url": "https://www.hapo.org/loans/loan-rates?tab=cards",
+    "snapshot": {
+      "url": "https://www.hapo.org/loans/loan-rates?tab=cards",
+      "fetched_at_utc": "2026-01-06T22:16:19.088094+00:00",
+      "status_code": 200,
+      "content_type": "text/html",
+      "sha256": "d22dea194544fa166867a6104458dfc98720c3e3c3cba3c465b45df626209b73",
+      "raw_path": "data/snapshots/d22dea194544fa166867a6104458dfc98720c3e3c3cba3c465b45df626209b73.html"
+    },
+    "title": "Loan Rates",
+    "parsed_table": {
+      "table_found": true,
+      "table_score": 17,
+      "headers": [
+        "Type",
+        "Description",
+        "APR *",
+        "Maximum Term",
+        "Conditions"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "Credit Card",
+            "Low Rate",
+            "13.75% (Currently as low as)",
+            "Revolving",
+            "*"
+          ],
+          "percentages": [
+            13.75
+          ]
+        },
+        {
+          "cells": [
+            "Credit Card",
+            "Cash Back",
+            "16.75% (Currently as low as)",
+            "Revolving",
+            "*"
+          ],
+          "percentages": [
+            16.75
+          ]
+        },
+        {
+          "cells": [
+            "Credit Card",
+            "Business",
+            "15.24% (Currently as low as)",
+            "Revolving",
+            "*\u00a0Must apply at one of our convenient branch locations"
+          ],
+          "percentages": [
+            15.24
+          ]
+        },
+        {
+          "cells": [
+            "Home Equity Line of Credit",
+            "Equity Visa",
+            "PRIME + 0.500% to PRIME + 1.500%",
+            "Call HAPO",
+            "**"
+          ],
+          "percentages": [
+            0.5,
+            1.5
+          ]
+        },
+        {
+          "cells": [
+            "Shared Secured",
+            "Share Secured",
+            "22.99%",
+            "Revolving",
+            ""
+          ],
+          "percentages": [
+            22.99
+          ]
+        },
+        {
+          "cells": [
+            "Youth Credit Card",
+            "Youth Credit Card",
+            "18.00%",
+            "Revolving",
+            "Learn More"
+          ],
+          "percentages": [
+            18.0
+          ]
+        }
+      ]
+    }
+  },
+  "pdf_terms": {
+    "pdf_path": "visa-account-agreement.pdf",
+    "note": "PDF parsed but did not yield numeric APR lines. Using rates page as authoritative source for APR ground truth."
+  },
+  "version": "v1"
+}

@@ -1,0 +1,12 @@
+{
+  "issuer": "Hapo Community Credit Union",
+  "card_pages": [
+    "https://www.hapo.org/personal/visa/instant-issue-platinum-visa",
+    "https://www.hapo.org/personal/visa/low-rate-visa",
+    "https://www.hapo.org/personal/visa/home-equity-visa",
+    "https://www.hapo.org/personal/visa/youth-visa-credit-card",
+    "https://www.hapo.org/personal/visa/share-secured-visa"
+  ],
+  "rates_page": "https://www.hapo.org/loans/loan-rates?tab=cards",
+  "disclosure_pdf_path": "visa-account-agreement.pdf"
+}
