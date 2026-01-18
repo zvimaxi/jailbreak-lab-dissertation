@@ -4,7 +4,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-import os
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -12,7 +12,7 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 
 # -----------------------------
-# Defaults (Option B friendly)
+# Defaults (matches your repo)
 # -----------------------------
 DEFAULT_OUT_ROOT = Path("data/runs")
 DEFAULT_DEFENSE = "D0"
@@ -72,6 +72,12 @@ def _pct(n: int, d: int) -> float:
     return round((n / d * 100.0), 2) if d else 0.0
 
 
+def _slug(s: str) -> str:
+    s = s.strip().lower()
+    s = re.sub(r"[^a-z0-9]+", "_", s)
+    return s.strip("_")[:120] or "x"
+
+
 # -----------------------------
 # Schema adapters
 # -----------------------------
@@ -79,7 +85,12 @@ def _pct(n: int, d: int) -> float:
 def _get_score_obj(run: Dict[str, Any]) -> Dict[str, Any]:
     for k in ("score", "scoring", "score_result", "evaluation", "eval"):
         v = run.get(k)
-        if isinstance(v, dict) and ("success" in v or "final_violates_truth" in v or "ever_violates_truth" in v):
+        if isinstance(v, dict) and (
+            "success" in v
+            or "final_violates_truth" in v
+            or "ever_violates_truth" in v
+            or "user_exposure_success" in v
+        ):
             return v
     metrics = run.get("metrics")
     if isinstance(metrics, dict):
@@ -87,33 +98,6 @@ def _get_score_obj(run: Dict[str, Any]) -> Dict[str, Any]:
         if isinstance(v, dict):
             return v
     return {}
-
-
-def _get_guardrails_obj(run: Dict[str, Any], score: Dict[str, Any]) -> Tuple[Dict[str, int], Dict[str, int], bool]:
-    fired = score.get("guardrail_fired_counts")
-    blocked = score.get("guardrail_blocked_counts")
-    any_block = score.get("any_session_block")
-
-    if isinstance(fired, dict) and isinstance(blocked, dict) and isinstance(any_block, bool):
-        fired_n = {str(k): int(v or 0) for k, v in fired.items()}
-        blocked_n = {str(k): int(v or 0) for k, v in blocked.items()}
-        return fired_n, blocked_n, bool(any_block)
-
-    gr = run.get("guardrails") or run.get("guardrail_events") or {}
-    fired_n: Dict[str, int] = {}
-    blocked_n: Dict[str, int] = {}
-    any_block_n = False
-    if isinstance(gr, dict):
-        fc = gr.get("fired_counts") or gr.get("fired") or {}
-        bc = gr.get("blocked_counts") or gr.get("blocked") or {}
-        ab = gr.get("any_session_block")
-        if isinstance(fc, dict):
-            fired_n = {str(k): int(v or 0) for k, v in fc.items()}
-        if isinstance(bc, dict):
-            blocked_n = {str(k): int(v or 0) for k, v in bc.items()}
-        if isinstance(ab, bool):
-            any_block_n = ab
-    return fired_n, blocked_n, any_block_n
 
 
 def _get_defense_level(run: Dict[str, Any], fallback: str = "UNKNOWN") -> str:
@@ -142,16 +126,78 @@ def _get_run_id(run: Dict[str, Any], idx: int) -> str:
 
 
 def _get_attack_type(run: Dict[str, Any]) -> str:
-    for k in ("attack_type", "attack_family", "attack_category", "attack"):
+    # Your data uses both "attack" and "attack_type"
+    for k in ("attack_type", "attack", "attack_family", "attack_category"):
         v = run.get(k)
         if isinstance(v, str) and v.strip():
             return v.strip()
     cfg = run.get("config")
     if isinstance(cfg, dict):
-        v = cfg.get("attack_type") or cfg.get("attack_family")
+        v = cfg.get("attack_type") or cfg.get("attack_family") or cfg.get("attack")
         if isinstance(v, str) and v.strip():
             return v.strip()
     return "UNKNOWN"
+
+
+def _get_transcript(run: Dict[str, Any]) -> List[Dict[str, Any]]:
+    t = run.get("transcript")
+    if isinstance(t, list):
+        return [x for x in t if isinstance(x, dict)]
+    # fallback if future schema changes
+    t2 = run.get("messages") or run.get("turns")
+    if isinstance(t2, list):
+        return [x for x in t2 if isinstance(x, dict)]
+    return []
+
+
+def _get_guardrail_flags_from_transcript(run: Dict[str, Any]) -> Tuple[Dict[str, int], Dict[str, int], bool]:
+    """
+    Your transcript assistant turns contain:
+      turn["guardrails"] with {global_guardrail_fired, moderation_guardrail_fired, ...}
+      turn["blocked"] boolean
+    Also score contains guardrail_fired_counts etc.
+    We'll prefer score totals; but if missing, compute here.
+    """
+    fired: Dict[str, int] = {"global": 0, "moderation": 0, "hallucination": 0, "session": 0}
+    blocked: Dict[str, int] = {"session": 0}
+    any_block = False
+
+    for turn in _get_transcript(run):
+        if turn.get("role") != "assistant":
+            continue
+        gr = turn.get("guardrails")
+        if isinstance(gr, dict):
+            if gr.get("global_guardrail_fired") is True:
+                fired["global"] += 1
+            if gr.get("moderation_guardrail_fired") is True:
+                fired["moderation"] += 1
+            if gr.get("hallucination_guardrail_fired") is True:
+                fired["hallucination"] += 1
+            if gr.get("session_guardrail_fired") is True:
+                fired["session"] += 1
+            if gr.get("session_guardrail_blocked") is True:
+                blocked["session"] += 1
+                any_block = True
+
+        if turn.get("blocked") is True:
+            blocked["session"] += 1
+            any_block = True
+
+    return fired, blocked, any_block
+
+
+def _get_guardrails_obj(run: Dict[str, Any], score: Dict[str, Any]) -> Tuple[Dict[str, int], Dict[str, int], bool]:
+    fired = score.get("guardrail_fired_counts")
+    blocked = score.get("guardrail_blocked_counts")
+    any_block = score.get("any_session_block")
+
+    if isinstance(fired, dict) and isinstance(blocked, dict) and isinstance(any_block, bool):
+        fired_n = {str(k): int(v or 0) for k, v in fired.items()}
+        blocked_n = {str(k): int(v or 0) for k, v in blocked.items()}
+        return fired_n, blocked_n, bool(any_block)
+
+    # fallback: compute from transcript
+    return _get_guardrail_flags_from_transcript(run)
 
 
 # -----------------------------
@@ -218,7 +264,7 @@ def _extract_run_kpis(run: Dict[str, Any], idx: int, default_defense: str) -> Ru
 
     fired_counts, blocked_counts, any_session_block = _get_guardrails_obj(run, score)
 
-    # Errors (kept simple; you can expand later if your runner logs more)
+    # Errors (simple)
     err = False
     err_type = ""
     for k in ("error", "exception"):
@@ -268,7 +314,7 @@ def _extract_run_kpis(run: Dict[str, Any], idx: int, default_defense: str) -> Ru
 
 
 # -----------------------------
-# Aggregation
+# Aggregation helpers
 # -----------------------------
 
 def _sum_dicts(dicts: Iterable[Dict[str, int]]) -> Dict[str, int]:
@@ -332,73 +378,216 @@ def _markdown_table(headers: List[str], rows: List[List[Any]]) -> str:
     return "\n".join([h, sep, body]) if body else "\n".join([h, sep])
 
 
-def _print_terminal_summary(overall: Dict[str, Any], bad_lines: int, runs_path: Path, out_dir: Path) -> None:
-    print("\n=== Summarizer KPIs ===")
-    print(f"Runs file: {runs_path}")
-    print(f"Out dir:   {out_dir}")
-    if bad_lines:
-        print(f"Bad/blank lines skipped: {bad_lines}")
+# -----------------------------
+# Appendix sample extraction
+# -----------------------------
 
-    valid = overall["valid_runs"]
-    total = overall["total_runs"]
+@dataclass
+class AppendixPick:
+    pick_type: str
+    defense_level: str
+    attack_type: str
+    run_id: str
+    any_session_block: bool
+    ever_violates_truth: bool
+    final_violates_truth: bool
+    user_exposure_success: bool
+    out_path: str
 
-    print(f"Valid runs: {valid}/{total}")
-    print(f"Local ASR (final violation): {overall['local_asr_success_final_violation_pct']}% ({overall['local_asr_success_final_violation_count']})")
-    print(f"Ever violation rate:         {overall['ever_violation_pct']}% ({overall['ever_violation_count']})")
-    print(f"Exposure success rate:       {overall['user_exposure_success_pct']}% ({overall['user_exposure_success_count']})")
-    print(f"Mid-only violation rate:     {overall['mid_only_violation_pct']}% ({overall['mid_only_violation_count']})")
-    print(f"Any session block rate:      {overall['any_session_block_pct']}% ({overall['any_session_block_count']})")
 
-    fired = overall.get("guardrail_fired_totals") or {}
-    blocked = overall.get("guardrail_blocked_totals") or {}
-    keys = sorted(set(list(fired.keys()) + list(blocked.keys())))
-    print("\nGuardrails totals:")
-    if not keys:
-        print("  (none)")
+def _render_transcript_md(run: Dict[str, Any]) -> str:
+    score = _get_score_obj(run) or {}
+    t = _get_transcript(run)
+
+    lines: List[str] = []
+    lines.append(f"# Appendix Evidence — {run.get('defense_level','UNKNOWN')} / {run.get('attack','UNKNOWN')} / {run.get('run_id','UNKNOWN')}")
+    lines.append("")
+    lines.append("## Key outcome flags (from score)")
+    lines.append("")
+    flags = [
+        ("success (final violation)", score.get("success")),
+        ("ever_violates_truth", score.get("ever_violates_truth")),
+        ("final_violates_truth", score.get("final_violates_truth")),
+        ("user_exposure_success", score.get("user_exposure_success")),
+        ("any_session_block", score.get("any_session_block")),
+        ("final_confirm_apr", score.get("final_confirm_apr")),
+        ("ground_truth_apr_min", score.get("ground_truth_apr_min")),
+        ("ground_truth_apr_max", score.get("ground_truth_apr_max")),
+    ]
+    for k, v in flags:
+        lines.append(f"- **{k}**: `{v}`")
+    lines.append("")
+
+    ev = score.get("evidence")
+    if isinstance(ev, dict):
+        lines.append("## Automated evidence snippets")
+        for k in ("ever_violation", "user_exposure", "final_violation"):
+            x = ev.get(k)
+            if isinstance(x, dict):
+                lines.append("")
+                lines.append(f"### {k}")
+                reason = x.get("reason")
+                turn_index = x.get("turn_index")
+                txt = x.get("text") or x.get("line")
+                lines.append(f"- **reason**: `{reason}`")
+                if turn_index is not None:
+                    lines.append(f"- **turn_index**: `{turn_index}`")
+                if txt:
+                    lines.append("")
+                    lines.append("> " + str(txt).replace("\n", "\n> "))
+        lines.append("")
+
+    lines.append("## Full transcript (role-ordered)")
+    lines.append("")
+    for i, turn in enumerate(t):
+        role = turn.get("role", "unknown")
+        text = turn.get("text", "")
+        delivered = turn.get("delivered_to_user")
+        blocked = turn.get("blocked")
+        meta = []
+        if role == "assistant":
+            if delivered is not None:
+                meta.append(f"delivered_to_user={delivered}")
+            if blocked is not None:
+                meta.append(f"blocked={blocked}")
+        meta_s = f" ({', '.join(meta)})" if meta else ""
+        lines.append(f"### Turn {i} — {role}{meta_s}")
+        lines.append("")
+        lines.append(str(text))
+        lines.append("")
+
+    return "\n".join(lines)
+
+
+def _select_appendix_examples(
+    runs: List[Dict[str, Any]],
+    kpis_by_run_id: Dict[str, RunKPIs],
+    max_per_defense: int = 4,
+) -> List[Tuple[str, Dict[str, Any]]]:
+    """
+    Returns list of (pick_type, run) for appendix.
+
+    We prefer picks that support Chapter 6 claims:
+      - FINAL_VIOLATION (commitment failure)
+      - MID_ONLY (reasoning drift but self-correct)
+      - BLOCKED_BASELINE (usability collapse / session block)
+      - CLEAN_DEFENSE (attack resisted & usable)
+
+    This selection is heuristic and can be tuned later.
+    """
+    picks: List[Tuple[str, Dict[str, Any]]] = []
+
+    # group by defense
+    by_def = {}
+    for r in runs:
+        dl = _get_defense_level(r, fallback="UNKNOWN")
+        by_def.setdefault(dl, []).append(r)
+
+    for dl, group in sorted(by_def.items()):
+        # sort stable by created_at_utc if present
+        group_sorted = sorted(group, key=lambda x: str(x.get("created_at_utc", "")))
+
+        # classify candidates
+        final_violation = []
+        mid_only = []
+        blocked_any = []
+        clean = []
+
+        for r in group_sorted:
+            rid = _get_run_id(r, 0)
+            k = kpis_by_run_id.get(rid)
+            if not k or k.error:
+                continue
+
+            if k.any_session_block:
+                blocked_any.append(r)
+
+            if k.final_violates_truth:
+                final_violation.append(r)
+            elif k.ever_violates_truth and not k.final_violates_truth:
+                mid_only.append(r)
+            elif (not k.ever_violates_truth) and (not k.any_session_block):
+                clean.append(r)
+
+        # pick at most max_per_defense, in priority order
+        local: List[Tuple[str, Dict[str, Any]]] = []
+
+        if final_violation:
+            local.append(("FINAL_VIOLATION", final_violation[0]))
+        if mid_only:
+            local.append(("MID_ONLY", mid_only[0]))
+        if blocked_any:
+            local.append(("ANY_SESSION_BLOCK", blocked_any[0]))
+        if clean:
+            local.append(("CLEAN_DEFENSE", clean[0]))
+
+        picks.extend(local[:max_per_defense])
+
+    return picks
+
+
+def _build_appendix(
+    runs_path: Path,
+    runs: List[Dict[str, Any]],
+    kpis: List[RunKPIs],
+    out_dir: Path,
+) -> None:
+    """
+    Writes:
+      - <out_dir>/appendix_samples/*.md
+      - <out_dir>/appendix_index.csv
+    """
+    out_samples = out_dir / "appendix_samples"
+    out_samples.mkdir(parents=True, exist_ok=True)
+
+    kpis_by_id = {k.run_id: k for k in kpis}
+    picks = _select_appendix_examples(runs, kpis_by_id)
+
+    index_rows: List[Dict[str, Any]] = []
+    for pick_type, run in picks:
+        rid = run.get("run_id", "")
+        dl = run.get("defense_level", _get_defense_level(run, fallback="UNKNOWN"))
+        at = run.get("attack_type", run.get("attack", _get_attack_type(run)))
+
+        k = kpis_by_id.get(rid)
+        if not k:
+            continue
+
+        fname = f"{_slug(dl)}__{_slug(at)}__{_slug(pick_type)}__{_slug(rid)}.md"
+        fpath = out_samples / fname
+        fpath.write_text(_render_transcript_md(run), encoding="utf-8")
+
+        index_rows.append(
+            {
+                "pick_type": pick_type,
+                "defense_level": dl,
+                "attack_type": at,
+                "run_id": rid,
+                "any_session_block": int(k.any_session_block),
+                "ever_violates_truth": int(k.ever_violates_truth),
+                "final_violates_truth": int(k.final_violates_truth),
+                "user_exposure_success": int(k.user_exposure_success),
+                "out_path": str(fpath),
+            }
+        )
+
+    if index_rows:
+        _write_csv(out_dir / "appendix_index.csv", index_rows, list(index_rows[0].keys()))
     else:
-        for k in keys:
-            print(f"  {k}: fired={fired.get(k,0)} blocked={blocked.get(k,0)}")
-    print("")
+        _write_csv(out_dir / "appendix_index.csv", [], [
+            "pick_type","defense_level","attack_type","run_id",
+            "any_session_block","ever_violates_truth","final_violates_truth","user_exposure_success","out_path"
+        ])
+
+    print(f"[OK] Appendix samples: {out_samples}")
+    print(f"[OK] Appendix index:   {out_dir / 'appendix_index.csv'}")
 
 
 # -----------------------------
-# Main
+# Main summarization
 # -----------------------------
 
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--defense_level",
-        type=str,
-        default=DEFAULT_DEFENSE,
-        help='Defense label used for default paths (e.g. "D0", "D1B"). Default: D0',
-    )
-    parser.add_argument(
-        "--runs_path",
-        type=str,
-        default=None,
-        help="Optional explicit runs.jsonl path. If omitted: data/runs/<defense_level>/runs.jsonl",
-    )
-    parser.add_argument(
-        "--out_dir",
-        type=str,
-        default=None,
-        help="Optional explicit output directory. If omitted: parent folder of runs_path",
-    )
-    args = parser.parse_args()
-
-    defense = args.defense_level.strip()
-    default_runs_path = DEFAULT_OUT_ROOT / defense / "runs.jsonl"
-    runs_path = Path(args.runs_path).expanduser() if args.runs_path else default_runs_path
-    runs_path = runs_path.resolve()
-
-    out_dir = Path(args.out_dir).expanduser().resolve() if args.out_dir else runs_path.parent
-
-    out_json = out_dir / "summary.json"
-    out_csv = out_dir / "summary.csv"
-    out_md = out_dir / "summary.md"
-    out_ts_csv = out_dir / "timeseries.csv"
-
+def _summarize_one_defense(defense: str, runs_path: Path, out_dir: Path) -> None:
     records, bad_lines, bad_samples = _read_jsonl(runs_path)
     print(f"[OK] Parsed {len(records)} run records from {runs_path}")
 
@@ -430,7 +619,7 @@ def main() -> None:
     # Per-run rows
     rows = [r.to_row() for r in kpis]
 
-    # Cumulative columns (exclude error runs from denominator)
+    # Cumulative columns
     cum_valid = 0
     cum_success = 0
     timeseries_rows: List[Dict[str, Any]] = []
@@ -470,18 +659,21 @@ def main() -> None:
         "bad_or_blank_lines": bad_lines,
         "bad_line_samples": bad_samples,
         "definition": {
-    "local_asr": "success_final_violation_pct where success == final_violates_truth (per evaluation/scoring.py)",
-    "cumulative_asr": "running success rate over run order, excluding error runs from denominator",
-    "ever_violation": "ever_violates_truth == True in any assistant turn",
-    "exposure_success": "user_exposure_success == True (violating turn delivered_to_user=True)",
-    "mid_only_violation": "ever_violates_truth=True AND final_violates_truth=False",
-    "guardrail_fired_totals": "Totals are counts of assistant turns whose text contained the predefined guardrail abort marker (or explicit guardrail flag if present).",
-    "guardrail_blocked_totals": "Totals are counts of assistant turns indicating session-level blocking (marker/flag).",
-},
+            "local_asr": "success_final_violation_pct where success == final_violates_truth (per score.success)",
+            "cumulative_asr": "running success rate over run order, excluding error runs from denominator",
+            "ever_violation": "ever_violates_truth == True in any assistant turn",
+            "exposure_success": "user_exposure_success == True (violating turn delivered_to_user=True)",
+            "mid_only_violation": "ever_violates_truth=True AND final_violates_truth=False",
+        },
         "overall": overall,
         "by_defense_level": by_defense,
         "by_attack_type": by_attack,
     }
+
+    out_json = out_dir / "summary.json"
+    out_csv = out_dir / "summary.csv"
+    out_md = out_dir / "summary.md"
+    out_ts_csv = out_dir / "timeseries.csv"
 
     _write_json(out_json, summary_obj)
     print(f"[OK] Wrote: {out_json}")
@@ -551,19 +743,6 @@ def main() -> None:
     )
     md_lines.append("")
 
-    md_lines.append("## Guardrails — Totals (Fired / Blocked)")
-    md_lines.append("")
-    fired_totals = o.get("guardrail_fired_totals") or {}
-    blocked_totals = o.get("guardrail_blocked_totals") or {}
-    all_gr_keys = sorted(set(list(fired_totals.keys()) + list(blocked_totals.keys())))
-    md_lines.append(
-        _markdown_table(
-            ["Guardrail", "Fired", "Blocked"],
-            [[k, fired_totals.get(k, 0), blocked_totals.get(k, 0)] for k in all_gr_keys] or [["(none)", 0, 0]],
-        )
-    )
-    md_lines.append("")
-
     md_lines.append("## By Defense Level")
     md_lines.append("")
     defense_rows: List[List[Any]] = []
@@ -588,23 +767,6 @@ def main() -> None:
     )
     md_lines.append("")
 
-    md_lines.append("## By Attack Type")
-    md_lines.append("")
-    attack_rows: List[List[Any]] = []
-    for at in sorted(by_attack.keys()):
-        x = by_attack[at]
-        attack_rows.append(
-            [
-                at,
-                f"{x['valid_runs']}/{x['total_runs']}",
-                f"{x['local_asr_success_final_violation_pct']}%",
-                f"{x['ever_violation_pct']}%",
-                f"{x['user_exposure_success_pct']}%",
-            ]
-        )
-    md_lines.append(_markdown_table(["Attack", "Valid/Total", "Local ASR", "Ever viol", "Exposure"], attack_rows))
-    md_lines.append("")
-
     if bad_lines:
         md_lines.append("## Warnings")
         md_lines.append("")
@@ -619,8 +781,63 @@ def main() -> None:
     out_md.write_text("\n".join(md_lines), encoding="utf-8")
     print(f"[OK] Wrote: {out_md}")
 
-    # Terminal KPI print
-    _print_terminal_summary(overall, bad_lines, runs_path, out_dir)
+    # NEW: Appendix extraction
+    _build_appendix(runs_path, records, kpis, out_dir)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--defense_level",
+        type=str,
+        default=DEFAULT_DEFENSE,
+        help='Defense label (e.g. "D0", "D1B"). Default: D0',
+    )
+    parser.add_argument(
+        "--runs_path",
+        type=str,
+        default=None,
+        help="Optional explicit runs.jsonl path. If omitted: data/runs/<defense_level>/runs.jsonl",
+    )
+    parser.add_argument(
+        "--out_dir",
+        type=str,
+        default=None,
+        help="Optional explicit output directory. If omitted: parent folder of runs_path",
+    )
+    parser.add_argument(
+        "--all_defenses",
+        action="store_true",
+        help="If set, summarize ALL defense folders found under data/runs/",
+    )
+    args = parser.parse_args()
+
+    if args.all_defenses:
+        root = DEFAULT_OUT_ROOT
+        if not root.exists():
+            raise FileNotFoundError(f"Runs root not found: {root}")
+
+        defense_dirs = sorted([p for p in root.iterdir() if p.is_dir() and (p / "runs.jsonl").exists()])
+        if not defense_dirs:
+            raise FileNotFoundError(f"No defense folders with runs.jsonl found under: {root}")
+
+        for d in defense_dirs:
+            defense = d.name
+            runs_path = (d / "runs.jsonl").resolve()
+            out_dir = d.resolve()
+            print(f"\n=== Summarizing {defense} ===")
+            _summarize_one_defense(defense, runs_path, out_dir)
+
+        print("\n[OK] Completed all defenses.")
+        return
+
+    defense = args.defense_level.strip()
+    default_runs_path = DEFAULT_OUT_ROOT / defense / "runs.jsonl"
+    runs_path = Path(args.runs_path).expanduser() if args.runs_path else default_runs_path
+    runs_path = runs_path.resolve()
+
+    out_dir = Path(args.out_dir).expanduser().resolve() if args.out_dir else runs_path.parent
+    _summarize_one_defense(defense, runs_path, out_dir)
 
 
 if __name__ == "__main__":
